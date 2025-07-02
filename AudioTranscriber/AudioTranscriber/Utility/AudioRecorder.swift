@@ -12,6 +12,23 @@ class AudioRecorder {
 	private var file: AVAudioFile?
 	private var isRecording = false
 	
+	func checkRecordPermissionNeeded(completionHandler: @escaping ((Bool) -> Void)) {
+		let permission = AVAudioApplication.shared.recordPermission
+		
+		switch permission {
+		case .undetermined:
+			requestRecordPermission { granted in
+				completionHandler(granted)
+			}
+		case .denied:
+			completionHandler(false)
+		case .granted:
+			completionHandler(true)
+		@unknown default:
+			completionHandler(false)
+		}
+	}
+	
 	func requestRecordPermission(completionHandler: @escaping ((Bool) -> Void)) {
 		AVAudioApplication.requestRecordPermission(completionHandler: { granted in
 			completionHandler(granted)

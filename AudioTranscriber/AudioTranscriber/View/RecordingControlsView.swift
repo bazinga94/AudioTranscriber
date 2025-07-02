@@ -16,19 +16,46 @@ struct RecordingControlsView: View {
 	
     var body: some View {
 		Button {
-			do {
-				try viewModel.startRecording()
-			} catch {
-				print("Audio save failed: \(error.localizedDescription)")
+			Task {
+				switch viewModel.state {
+				case .idle:
+					print("idle")
+					viewModel.state = .recording
+					
+					let granted = await viewModel.checkRecordPermission()
+					
+					if granted {
+						do {
+							try viewModel.startRecording()
+						} catch {
+							print("Audio save failed: \(error.localizedDescription)")
+						}
+					}
+				case .recording:
+					print("recording")
+					viewModel.state = .idle
+					
+					viewModel.stopRecording()
+				}
 			}
+			
 		} label: {
-			Label("Record", systemImage: "mic.fill")
-				.foregroundStyle(.white)
-				.frame(maxWidth: .infinity)
-				.padding()
+			Label(
+				viewModel.state == .recording ? "Stop" : "Record",
+				systemImage: viewModel.state == .recording ? "stop.fill" : "mic.fill"
+			)
+			.foregroundStyle(.white)
+			.frame(maxWidth: .infinity, maxHeight: .infinity)
+			.contentShape(Rectangle())
 		}
+		.frame(height: 64)
 		.buttonStyle(.plain)
-		.background(Color(UIColor.systemBlue))
+		.background(
+			viewModel.state == .recording
+			? Color(UIColor.systemRed)
+			: Color(UIColor.systemBlue)
+		)
+		.animation(.easeInOut, value: viewModel.state)
     }
 }
 

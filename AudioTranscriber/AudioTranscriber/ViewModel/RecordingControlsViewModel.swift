@@ -9,13 +9,22 @@ import SwiftUI
 import AVFAudio
 
 class RecordingControlsViewModel: ObservableObject {
+	enum RecordingState {
+		case idle
+		case recording
+	}
+	
 	@Published var micAuthorized: Bool = false
+	@Published var state: RecordingState = .idle
 	private var audioRecorder: AudioRecorder = AudioRecorder()
 	
-	func requestRecordPermission() {
-		audioRecorder.requestRecordPermission { granted in
-			DispatchQueue.main.async {
-				self.micAuthorized = granted
+	func checkRecordPermission() async -> Bool {
+		return await withCheckedContinuation { continuation in
+			audioRecorder.checkRecordPermissionNeeded { granted in
+				DispatchQueue.main.async {
+					self.micAuthorized = granted
+				}
+				continuation.resume(returning: granted)
 			}
 		}
 	}

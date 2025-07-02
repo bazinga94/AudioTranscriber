@@ -19,6 +19,8 @@ struct RecordingHomeView: View {
 		NavigationStack {
 			VStack {
 				RecordingListView()
+			}
+			.safeAreaInset(edge: .bottom) {
 				RecordingControlsView(viewModel: .init())
 			}
 		}
