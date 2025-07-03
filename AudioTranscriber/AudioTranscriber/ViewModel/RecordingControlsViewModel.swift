@@ -18,11 +18,14 @@ class RecordingControlsViewModel: ObservableObject {
 	@Published var state: RecordingState = .idle
 	
 	private var audioRecorder: AudioRecorder
+	private var appleTranscription: AppleTranscriptionService
 	private(set) var audioSegmentURLs: [URL] = []
 	private var cancellables = Set<AnyCancellable>()
 	
-	init(audioRecorder: AudioRecorder = AudioRecorder()) {
+	init(audioRecorder: AudioRecorder = AudioRecorder(), appleTranscription: AppleTranscriptionService = AppleTranscriptionService()) {
 		self.audioRecorder = audioRecorder
+		self.appleTranscription = appleTranscription
+		
 		self.audioRecorder.audioSegmentPublisher
 			.sink(receiveValue: { [weak self] url in
 				self?.audioSegmentURLs.append(url)
@@ -51,5 +54,23 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	func stopRecording() {
 		audioRecorder.stopRecording()
+	}
+	
+	private func flushSavedSegments() {
+		audioSegmentURLs = []
+	}
+	
+	func checkSpeechRecognitionPermission() async -> Bool {
+		return await withCheckedContinuation { continuation in
+			appleTranscription.checkSpeechRecognitionPermissionNeeded { granted in
+				continuation.resume(returning: granted)
+			}
+		}
+	}
+	
+	func transcribeRecord() {
+		// Add Task into Queue
+		
+		flushSavedSegments()
 	}
 }

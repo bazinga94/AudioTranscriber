@@ -36,7 +36,7 @@ class AudioRecorder {
 		}
 	}
 	
-	func requestRecordPermission(completionHandler: @escaping ((Bool) -> Void)) {
+	private func requestRecordPermission(completionHandler: @escaping ((Bool) -> Void)) {
 		AVAudioApplication.requestRecordPermission(completionHandler: { granted in
 			completionHandler(granted)
 		})

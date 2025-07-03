@@ -20,22 +20,23 @@ struct RecordingControlsView: View {
 			Task {
 				switch viewModel.state {
 				case .idle:
-					viewModel.state = .recording
+					let recordGranted = await viewModel.checkRecordPermission()
+					let speechRecognitionGranted = await viewModel.checkSpeechRecognitionPermission()
 					
-					let granted = await viewModel.checkRecordPermission()
-					
-					if granted {
+					if recordGranted && speechRecognitionGranted {
 						do {
+							viewModel.state = .recording
 							try viewModel.startRecording()
 						} catch {
+							viewModel.state = .idle
 							print("Audio save failed: \(error.localizedDescription)")
 						}
 					}
 				case .recording:
-					viewModel.state = .idle
-					
 					viewModel.stopRecording()
 					saveRecordingSession()
+					transcribeRecordingSession()
+					viewModel.state = .idle
 				}
 			}
 			
@@ -70,6 +71,10 @@ struct RecordingControlsView: View {
 		} catch {
 			print("Save failed: \(error.localizedDescription)")
 		}
+	}
+	
+	func transcribeRecordingSession() {
+		viewModel.transcribeRecord()
 	}
 }
 
