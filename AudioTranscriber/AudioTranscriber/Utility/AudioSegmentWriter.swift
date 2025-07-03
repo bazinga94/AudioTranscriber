@@ -7,13 +7,19 @@
 
 import AVFoundation
 
+protocol AudioSegmentWriterDelegate: AnyObject {
+	func didCreateSegmentAt(url: URL)
+}
+
 class AudioSegmentWriter {
 	private let format: AVAudioFormat
 	private let directory: URL
 	private var currentFile: AVAudioFile?
 	
-	private let segmentDuration: TimeInterval = 30
+	private let segmentDuration: TimeInterval = 3
 	private var recordingStartTime: AVAudioTime?
+	
+	weak var delegate: AudioSegmentWriterDelegate?
 
 	init(format: AVAudioFormat, directory: URL = FileManager.default.temporaryDirectory) {
 		self.format = format
@@ -46,6 +52,7 @@ class AudioSegmentWriter {
 	private func createNewFile() {
 		let url = directory.appendingPathComponent("recording_segment_\(UUID().uuidString).m4a")
 		currentFile = try? AVAudioFile(forWriting: url, settings: format.settings)
+		delegate?.didCreateSegmentAt(url: url)
 	}
 }
 

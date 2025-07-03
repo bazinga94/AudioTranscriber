@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RecordingControlsView: View {
+	@Environment(\.modelContext) private var modelContext
 	@StateObject var viewModel: RecordingControlsViewModel
 	
 	init(viewModel: RecordingControlsViewModel) {
@@ -34,6 +35,7 @@ struct RecordingControlsView: View {
 					viewModel.state = .idle
 					
 					viewModel.stopRecording()
+					saveRecordingSession()
 				}
 			}
 			
@@ -55,8 +57,22 @@ struct RecordingControlsView: View {
 		)
 		.animation(.easeInOut, value: viewModel.state)
     }
+	
+	func saveRecordingSession() {
+		let recordingSession = RecordingSession()
+		let audioSegments = viewModel.audioSegmentURLs.map { AudioSegment(fileURL: $0, session: recordingSession) }
+		
+		recordingSession.segments = audioSegments
+		modelContext.insert(recordingSession)
+		// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
+		do {
+			try modelContext.save()
+		} catch {
+			print("Save failed: \(error.localizedDescription)")
+		}
+	}
 }
 
 #Preview {
-	RecordingControlsView(viewModel: .init(, modelContext: <#ModelContext#>))
+	RecordingControlsView(viewModel: .init())
 }

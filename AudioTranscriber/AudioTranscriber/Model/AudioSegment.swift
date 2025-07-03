@@ -17,7 +17,7 @@ class AudioSegment {
 
 	@Relationship var session: RecordingSession
 
-	init(fileURL: URL, duration: TimeInterval, session: RecordingSession, createdAt: Date = .now) {
+	init(fileURL: URL, createdAt: Date = .now, session: RecordingSession) {
 		self.id = UUID()
 		self.fileURL = fileURL
 		self.createdAt = createdAt

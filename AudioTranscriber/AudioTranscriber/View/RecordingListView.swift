@@ -30,26 +30,26 @@ struct RecordingListView: View {
 			ToolbarItem(placement: .navigationBarTrailing) {
 				EditButton()
 			}
-			ToolbarItem {
-				Button(action: addItem) {
-					Label("Add Item", systemImage: "plus")
-				}
-			}
+//			ToolbarItem {
+//				Button(action: addItem) {
+//					Label("Add Item", systemImage: "plus")
+//				}
+//			}
 		}
     }
 	
-	private func addItem() {
-		withAnimation {
-			let session = RecordingSession(title: "New Session", createdAt: Date())
-			modelContext.insert(session)
-			// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
-			do {
-				try modelContext.save()
-			} catch {
-				print("Save failed: \(error.localizedDescription)")
-			}
-		}
-	}
+//	private func addItem() {
+//		withAnimation {
+//			let session = RecordingSession(title: "New Session", createdAt: Date())
+//			modelContext.insert(session)
+//			// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
+//			do {
+//				try modelContext.save()
+//			} catch {
+//				print("Save failed: \(error.localizedDescription)")
+//			}
+//		}
+//	}
 
 	private func deleteItems(offsets: IndexSet) {
 		withAnimation {

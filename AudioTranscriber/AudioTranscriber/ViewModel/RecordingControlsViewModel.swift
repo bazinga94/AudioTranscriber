@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-import AVFAudio
-import SwiftData
+import Combine
 
 class RecordingControlsViewModel: ObservableObject {
 	enum RecordingState {
@@ -17,12 +16,18 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	@Published var micAuthorized: Bool = false
 	@Published var state: RecordingState = .idle
-	private var audioRecorder: AudioRecorder
-	private let modelContext: ModelContext
 	
-	init(audioRecorder: AudioRecorder = AudioRecorder(), modelContext: ModelContext) {
+	private var audioRecorder: AudioRecorder
+	private(set) var audioSegmentURLs: [URL] = []
+	private var cancellables = Set<AnyCancellable>()
+	
+	init(audioRecorder: AudioRecorder = AudioRecorder()) {
 		self.audioRecorder = audioRecorder
-		self.modelContext = modelContext
+		self.audioRecorder.audioSegmentPublisher
+			.sink(receiveValue: { [weak self] url in
+				self?.audioSegmentURLs.append(url)
+			})
+			.store(in: &cancellables)
 	}
 	
 	func checkRecordPermission() async -> Bool {
@@ -37,12 +42,8 @@ class RecordingControlsViewModel: ObservableObject {
 	}
 	
 	func startRecording() throws {
-		let directory = FileManager.default.temporaryDirectory
-		let stringFileURL = "recording_\(UUID().uuidString).caf"
-		let fileURL = directory.appendingPathComponent(stringFileURL)
-		
 		do {
-			try audioRecorder.startRecording(to: fileURL)
+			try audioRecorder.startRecording()
 		} catch {
 			print("Audio save failed: \(error.localizedDescription)")
 		}

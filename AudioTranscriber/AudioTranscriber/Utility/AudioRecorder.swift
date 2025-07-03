@@ -6,11 +6,18 @@
 //
 
 import AVFAudio
+import Combine
 
 class AudioRecorder {
 	private var engine = AVAudioEngine()
 	private var segmentWriter: AudioSegmentWriter?
 	private var isRecording = false
+	
+	private let audioSegmentSubject: PassthroughSubject<URL, Never> = .init()
+	var audioSegmentPublisher: AnyPublisher<URL, Never> {
+		audioSegmentSubject
+			.eraseToAnyPublisher()
+	}
 	
 	func checkRecordPermissionNeeded(completionHandler: @escaping ((Bool) -> Void)) {
 		let permission = AVAudioApplication.shared.recordPermission
@@ -35,13 +42,14 @@ class AudioRecorder {
 		})
 	}
 
-	func startRecording(to url: URL) throws {
+	func startRecording() throws {
 		let session = AVAudioSession.sharedInstance()
 		try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
 		try session.setActive(true)
 
 		let format = engine.inputNode.outputFormat(forBus: 0)
 		segmentWriter = AudioSegmentWriter(format: format)
+		segmentWriter?.delegate = self
 
 		engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, time in
 			self?.segmentWriter?.write(buffer, time: time)
@@ -56,5 +64,11 @@ class AudioRecorder {
 		engine.stop()
 		segmentWriter?.stop()
 		isRecording = false
+	}
+}
+
+extension AudioRecorder: AudioSegmentWriterDelegate {
+	func didCreateSegmentAt(url: URL) {
+		audioSegmentSubject.send(url)
 	}
 }
