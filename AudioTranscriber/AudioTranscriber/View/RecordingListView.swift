@@ -10,15 +10,18 @@ import SwiftData
 
 struct RecordingListView: View {
 	@Environment(\.modelContext) private var modelContext
-	@Query private var items: [Item]
+	@Query(sort: \RecordingSession.createdAt, order: .reverse) private var sessions: [RecordingSession]
 	
     var body: some View {
 		List {
-			ForEach(items) { item in
+			ForEach(sessions) { session in
 				NavigationLink {
-					Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
+					Text("Session recorded on \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
 				} label: {
-					Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+					VStack(alignment: .leading) {
+						Text(session.title ?? "Untitled")
+						Text(session.createdAt, format: Date.FormatStyle(date: .numeric, time: .standard))
+					}
 				}
 			}
 			.onDelete(perform: deleteItems)
@@ -37,8 +40,8 @@ struct RecordingListView: View {
 	
 	private func addItem() {
 		withAnimation {
-			let newItem = Item(timestamp: Date())
-			modelContext.insert(newItem)
+			let session = RecordingSession(title: "New Session", createdAt: Date())
+			modelContext.insert(session)
 			// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
 			do {
 				try modelContext.save()
@@ -51,7 +54,7 @@ struct RecordingListView: View {
 	private func deleteItems(offsets: IndexSet) {
 		withAnimation {
 			for index in offsets {
-				modelContext.delete(items[index])
+				modelContext.delete(sessions[index])
 				// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
 				do {
 					try modelContext.save()
@@ -64,6 +67,13 @@ struct RecordingListView: View {
 }
 
 #Preview {
-    RecordingListView()
-		.modelContainer(for: Item.self, inMemory: true)
+	let config = ModelConfiguration(isStoredInMemoryOnly: true)
+	let container = try! ModelContainer(for: RecordingSession.self, configurations: config)
+
+	let context = container.mainContext
+	let sample = RecordingSession(title: "Test Session", createdAt: Date())
+	context.insert(sample)
+
+	return RecordingListView()
+		.modelContainer(container)
 }

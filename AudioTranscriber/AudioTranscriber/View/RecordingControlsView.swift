@@ -19,7 +19,6 @@ struct RecordingControlsView: View {
 			Task {
 				switch viewModel.state {
 				case .idle:
-					print("idle")
 					viewModel.state = .recording
 					
 					let granted = await viewModel.checkRecordPermission()
@@ -32,7 +31,6 @@ struct RecordingControlsView: View {
 						}
 					}
 				case .recording:
-					print("recording")
 					viewModel.state = .idle
 					
 					viewModel.stopRecording()
@@ -60,5 +58,5 @@ struct RecordingControlsView: View {
 }
 
 #Preview {
-	RecordingControlsView(viewModel: .init())
+	RecordingControlsView(viewModel: .init(, modelContext: <#ModelContext#>))
 }

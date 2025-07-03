@@ -12,7 +12,8 @@ import SwiftData
 struct AudioTranscriberApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+			RecordingSession.self,
+			AudioSegment.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
 
@@ -25,8 +26,7 @@ struct AudioTranscriberApp: App {
 
     var body: some Scene {
         WindowGroup {
-//            ContentView()
-			RecordingHomeView(viewModel: .init())
+			RecordingHomeView()
         }
         .modelContainer(sharedModelContainer)
     }

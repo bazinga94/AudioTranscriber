@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AVFAudio
+import SwiftData
 
 class RecordingControlsViewModel: ObservableObject {
 	enum RecordingState {
@@ -16,7 +17,13 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	@Published var micAuthorized: Bool = false
 	@Published var state: RecordingState = .idle
-	private var audioRecorder: AudioRecorder = AudioRecorder()
+	private var audioRecorder: AudioRecorder
+	private let modelContext: ModelContext
+	
+	init(audioRecorder: AudioRecorder = AudioRecorder(), modelContext: ModelContext) {
+		self.audioRecorder = audioRecorder
+		self.modelContext = modelContext
+	}
 	
 	func checkRecordPermission() async -> Bool {
 		return await withCheckedContinuation { continuation in
