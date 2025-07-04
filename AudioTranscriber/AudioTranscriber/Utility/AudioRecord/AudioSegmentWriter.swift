@@ -16,7 +16,7 @@ class AudioSegmentWriter {
 	private let directory: URL
 	private var currentFile: AVAudioFile?
 	
-	private let segmentDuration: TimeInterval = 3
+	private let segmentDuration: TimeInterval = 10
 	private var recordingStartTime: AVAudioTime?
 	
 	weak var delegate: AudioSegmentWriterDelegate?
@@ -24,7 +24,6 @@ class AudioSegmentWriter {
 	init(format: AVAudioFormat, directory: URL = FileManager.default.temporaryDirectory) {
 		self.format = format
 		self.directory = directory
-		createNewFile()
 	}
 
 	func write(_ buffer: AVAudioPCMBuffer, time: AVAudioTime) {
@@ -49,7 +48,7 @@ class AudioSegmentWriter {
 		recordingStartTime = nil
 	}
 
-	private func createNewFile() {
+	func createNewFile() {
 		let url = directory.appendingPathComponent("recording_segment_\(UUID().uuidString).m4a")
 		currentFile = try? AVAudioFile(forWriting: url, settings: format.settings)
 		delegate?.didCreateSegmentAt(url: url)

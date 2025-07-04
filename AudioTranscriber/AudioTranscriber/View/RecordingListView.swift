@@ -23,6 +23,8 @@ struct RecordingListView: View {
 								Text(segment.transcriptionText ?? "")
 							}
 						}
+						Spacer()
+						Text(session.fullTranscription ?? "")
 					}
 				} label: {
 					VStack(alignment: .leading) {

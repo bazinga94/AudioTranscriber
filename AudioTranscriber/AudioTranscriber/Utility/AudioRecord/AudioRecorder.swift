@@ -9,7 +9,7 @@ import AVFAudio
 import Combine
 
 class AudioRecorder {
-	private var engine = AVAudioEngine()
+	private var engine: AVAudioEngine
 	private var segmentWriter: AudioSegmentWriter?
 	private var isRecording = false
 	
@@ -17,6 +17,10 @@ class AudioRecorder {
 	var audioSegmentPublisher: AnyPublisher<URL, Never> {
 		audioSegmentSubject
 			.eraseToAnyPublisher()
+	}
+	
+	init(engine: AVAudioEngine = AVAudioEngine()) {
+		self.engine = engine
 	}
 	
 	func checkRecordPermissionNeeded(completionHandler: @escaping ((Bool) -> Void)) {
@@ -50,6 +54,7 @@ class AudioRecorder {
 		let format = engine.inputNode.outputFormat(forBus: 0)
 		segmentWriter = AudioSegmentWriter(format: format)
 		segmentWriter?.delegate = self
+		segmentWriter?.createNewFile()
 
 		engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, time in
 			self?.segmentWriter?.write(buffer, time: time)

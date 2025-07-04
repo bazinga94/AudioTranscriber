@@ -60,7 +60,7 @@ struct RecordingControlsView: View {
     }
 	
 	func saveRecordingSession() {
-		let recordingSession = RecordingSession()
+		guard let recordingSession = self.viewModel.currentRecordingSession else { return }
 		let audioSegments = viewModel.audioSegmentURLs.map { AudioSegment(fileURL: $0, session: recordingSession) }
 		
 		recordingSession.segments = audioSegments
@@ -79,5 +79,14 @@ struct RecordingControlsView: View {
 }
 
 #Preview {
-	RecordingControlsView(viewModel: .init())
+	RecordingControlsView(
+		viewModel: .init(
+			audioRecorder: .init(),
+			appleTranscription: .init(),
+			transcriptionQueueManager: .init(
+				primaryService: AppleTranscriptionService(),	// Need change
+				fallbackService: AppleTranscriptionService()
+			)
+		)
+	)
 }

@@ -8,7 +8,7 @@
 import Foundation
 import Speech
 
-class AppleTranscriptionService {
+class AppleTranscriptionService: TranscriptionService {
 	
 	func checkSpeechRecognitionPermissionNeeded(completionHandler: @escaping ((Bool) -> Void)) {
 		
@@ -42,6 +42,7 @@ class AppleTranscriptionService {
 	}
 	
 	func transcribe(fileURL: URL) async throws -> String {
+		print("2", fileURL)
 		let recognizer = SFSpeechRecognizer()
 		guard let recognizer = recognizer, recognizer.isAvailable else {
 			throw TranscriptionError.notAvailable
@@ -51,15 +52,17 @@ class AppleTranscriptionService {
 		return try await withCheckedThrowingContinuation { continuation in
 			recognizer.recognitionTask(with: request) { result, error in
 				if let error = error {
-					continuation.resume(throwing: error)
+					continuation.resume(throwing: TranscriptionError.speechRecognitionFailed(error))
 				} else if let result = result, result.isFinal {
+					print(result.bestTranscription.formattedString)
 					continuation.resume(returning: result.bestTranscription.formattedString)
 				}
 			}
 		}
 	}
-	
-	enum TranscriptionError: Error {
-		case notAvailable
-	}
+}
+
+enum TranscriptionError: Error {
+	case notAvailable
+	case speechRecognitionFailed(Error)
 }

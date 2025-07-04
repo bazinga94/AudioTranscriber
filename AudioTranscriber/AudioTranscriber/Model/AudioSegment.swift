@@ -8,8 +8,13 @@
 import Foundation
 import SwiftData
 
+protocol AudioTranscribable: PersistentModel {
+	var fileURL: URL { get }
+	var transcriptionText: String? { get set }
+}
+
 @Model
-class AudioSegment {
+class AudioSegment: AudioTranscribable {
 	@Attribute(.unique) var id: UUID
 	var fileURL: URL
 	var transcriptionText: String?

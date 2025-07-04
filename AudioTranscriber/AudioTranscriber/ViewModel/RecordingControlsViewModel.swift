@@ -19,15 +19,24 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	private var audioRecorder: AudioRecorder
 	private var appleTranscription: AppleTranscriptionService
+	private var transcriptionQueueManager: TranscriptionQueueManager
+	
+	private(set) var currentRecordingSession: RecordingSession?
 	private(set) var audioSegmentURLs: [URL] = []
 	private var cancellables = Set<AnyCancellable>()
 	
-	init(audioRecorder: AudioRecorder = AudioRecorder(), appleTranscription: AppleTranscriptionService = AppleTranscriptionService()) {
+	init(
+		audioRecorder: AudioRecorder,
+		appleTranscription: AppleTranscriptionService,
+		transcriptionQueueManager: TranscriptionQueueManager
+	) {
 		self.audioRecorder = audioRecorder
 		self.appleTranscription = appleTranscription
+		self.transcriptionQueueManager = transcriptionQueueManager
 		
 		self.audioRecorder.audioSegmentPublisher
 			.sink(receiveValue: { [weak self] url in
+				print("1", url)
 				self?.audioSegmentURLs.append(url)
 			})
 			.store(in: &cancellables)
@@ -46,6 +55,7 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	func startRecording() throws {
 		do {
+			self.currentRecordingSession = RecordingSession()
 			try audioRecorder.startRecording()
 		} catch {
 			print("Audio save failed: \(error.localizedDescription)")
@@ -54,10 +64,6 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	func stopRecording() {
 		audioRecorder.stopRecording()
-	}
-	
-	private func flushSavedSegments() {
-		audioSegmentURLs = []
 	}
 	
 	func checkSpeechRecognitionPermission() async -> Bool {
@@ -69,8 +75,21 @@ class RecordingControlsViewModel: ObservableObject {
 	}
 	
 	func transcribeRecord() {
-		// Add Task into Queue
-		
-		flushSavedSegments()
+		Task {
+			await withTaskGroup(of: Void.self) { [weak self] group in
+				for segment in self?.currentRecordingSession?.segments ?? [] {
+					let task = AudioTranscriptionTask(segment: segment)
+					group.addTask {
+						await self?.transcriptionQueueManager.add(task: task)
+					}
+				}
+			}
+			flushSavedSessionAndSegments()
+		}
+	}
+	
+	private func flushSavedSessionAndSegments() {
+		self.currentRecordingSession = nil
+		self.audioSegmentURLs = []
 	}
 }

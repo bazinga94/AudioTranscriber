@@ -13,6 +13,7 @@ class RecordingSession {
 	@Attribute(.unique) var id: UUID
 	var createdAt: Date
 	var title: String?
+	var fullTranscription: String? = nil
 
 	@Relationship(deleteRule: .cascade) var segments: [AudioSegment]
 

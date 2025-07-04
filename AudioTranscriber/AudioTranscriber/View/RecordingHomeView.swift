@@ -15,7 +15,16 @@ struct RecordingHomeView: View {
 				RecordingListView()
 			}
 			.safeAreaInset(edge: .bottom) {
-				RecordingControlsView(viewModel: .init())
+				RecordingControlsView(
+					viewModel: .init(
+						audioRecorder: .init(),
+						appleTranscription: .init(),
+						transcriptionQueueManager: .init(
+							primaryService: AppleTranscriptionService(),	// Need change
+							fallbackService: AppleTranscriptionService()
+						)
+					)
+				)
 			}
 		}
 	}
