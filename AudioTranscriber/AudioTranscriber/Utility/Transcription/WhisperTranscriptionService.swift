@@ -42,11 +42,11 @@ class WhisperTranscriptionService: TranscriptionService {
 
 		let (data, response) = try await URLSession.shared.data(for: request)
 		guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-			print("OpenAI Error Response: ")
-			print(response)
-			if let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-				print(errorResponse)
-			}
+//			print("OpenAI Error Response: ")
+//			print(response)
+//			if let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+//				print(errorResponse)
+//			}
 			throw WhisperTranscriptionError.invalidResponse
 		}
 

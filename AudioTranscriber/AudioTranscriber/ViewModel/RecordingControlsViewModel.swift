@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import AVFAudio
 
 class RecordingControlsViewModel: ObservableObject {
 	enum RecordingState {
@@ -39,6 +40,9 @@ class RecordingControlsViewModel: ObservableObject {
 				self?.audioSegmentURLs.append(url)
 			}
 			.store(in: &cancellables)
+		
+		self.addAudioRouteChangeObserver()
+		self.addInterruptionNotificationObserver()
 	}
 	
 	func toggleRecordingState() {
@@ -113,6 +117,86 @@ class RecordingControlsViewModel: ObservableObject {
 	private func flushSavedSessionAndSegments() {
 		currentRecordingSession = nil
 		audioSegmentURLs = []
+	}
+	
+	private func addAudioRouteChangeObserver() {
+		NotificationCenter.default.addObserver(
+			forName: AVAudioSession.routeChangeNotification,
+			object: nil,
+			queue: .main
+		) { [weak self] notification in
+			self?.handleAudioRouteChange(notification)
+		}
+	}
+	
+	private func handleAudioRouteChange(_ notification: Notification) {
+		guard let userInfo = notification.userInfo,
+			  let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
+			  let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+			return
+		}
+
+		let currentOutputs = AVAudioSession.sharedInstance().currentRoute.outputs
+		let isExternalOutputConnected = currentOutputs.contains {
+			[.headphones, .bluetoothA2DP, .bluetoothHFP, .bluetoothLE].contains($0.portType)
+		}
+
+		switch reason {
+		case .oldDeviceUnavailable:
+			print("Device unplugged — pausing")
+			audioRecorder.pauseRecording()
+			state = .paused
+			
+		case .newDeviceAvailable, .routeConfigurationChange:
+			print("🎧 Route changed — checking if resume is needed")
+			if isExternalOutputConnected {
+				try? audioRecorder.resumeRecording()
+				state = .recording
+			} else {
+				audioRecorder.pauseRecording()
+				state = .paused
+			}
+			
+		default:
+			break
+		}
+	}
+	
+	private func addInterruptionNotificationObserver() {
+		NotificationCenter.default.addObserver(
+			forName: AVAudioSession.interruptionNotification,
+			object: nil,
+			queue: .main
+		) { [weak self] notification in
+			self?.handleAudioInterruption(notification)
+		}
+	}
+	
+	private func handleAudioInterruption(_ notification: Notification) {
+		guard let userInfo = notification.userInfo,
+			  let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
+			  let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+			return
+		}
+
+		switch type {
+		case .began:
+			print("Interruption began — pausing")
+			audioRecorder.pauseRecording()
+			state = .paused
+
+		case .ended:
+			let shouldResume = (userInfo[AVAudioSessionInterruptionOptionKey] as? UInt).map { AVAudioSession.InterruptionOptions(rawValue: $0) }?.contains(.shouldResume) ?? false
+
+			if shouldResume {
+				print("Interruption ended — resuming")
+				try? audioRecorder.resumeRecording()
+				state = .recording
+			}
+			
+		default:
+			break
+		}
 	}
 }
 
