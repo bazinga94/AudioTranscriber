@@ -29,9 +29,22 @@
 		433EDC9A2E1595B9007D64AA /* AudioTranscriberUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AudioTranscriberUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		438D1D842E19E71E00FE6D3F /* Exceptions for "AudioTranscriber" folder in "AudioTranscriber" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 433EDC7D2E1595B8007D64AA /* AudioTranscriber */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		433EDC802E1595B8007D64AA /* AudioTranscriber */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				438D1D842E19E71E00FE6D3F /* Exceptions for "AudioTranscriber" folder in "AudioTranscriber" target */,
+			);
 			path = AudioTranscriber;
 			sourceTree = "<group>";
 		};
@@ -401,6 +414,7 @@
 				DEVELOPMENT_TEAM = UWC7QPX692;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudioTranscriber/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Please allow microphone access so we can record your voice.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to transcribe your recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -432,6 +446,7 @@
 				DEVELOPMENT_TEAM = UWC7QPX692;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AudioTranscriber/Info.plist;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Please allow microphone access so we can record your voice.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to transcribe your recordings.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

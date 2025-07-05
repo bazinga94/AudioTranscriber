@@ -32,7 +32,7 @@ class AudioRecorder {
 
 	func startRecording() throws {
 		let session = AVAudioSession.sharedInstance()
-		try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker])
+		try session.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .mixWithOthers])
 		try session.setActive(true)
 
 		let format = engine.inputNode.outputFormat(forBus: 0)
