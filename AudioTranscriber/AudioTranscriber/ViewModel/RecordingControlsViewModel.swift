@@ -12,6 +12,7 @@ class RecordingControlsViewModel: ObservableObject {
 	enum RecordingState {
 		case idle
 		case recording
+		case paused
 	}
 	
 	@Published var state: RecordingState = .idle
@@ -34,35 +35,61 @@ class RecordingControlsViewModel: ObservableObject {
 		self.transcriptionQueueManager = transcriptionQueueManager
 		
 		self.audioRecorder.audioSegmentPublisher
-			.sink(receiveValue: { [weak self] url in
+			.sink { [weak self] url in
 				self?.audioSegmentURLs.append(url)
-			})
+			}
 			.store(in: &cancellables)
 	}
 	
+	func toggleRecordingState() {
+		Task {
+			switch state {
+			case .idle:
+				let recordGranted = await checkRecordPermission()
+				let speechGranted = await checkSpeechRecognitionPermission()
+				
+				guard recordGranted && speechGranted else { return }
+				
+				do {
+					currentRecordingSession = RecordingSession()
+					try audioRecorder.startRecording()
+					state = .recording
+				} catch {
+					print("Recording start failed: \(error)")
+					state = .idle
+				}
+				
+			case .recording:
+				audioRecorder.pauseRecording()
+				state = .paused
+				
+			case .paused:
+				do {
+					try audioRecorder.resumeRecording()
+					state = .recording
+				} catch {
+					print("Resume failed: \(error)")
+					state = .paused
+				}
+			}
+		}
+	}
+	
+	func stopRecordingAndSave() {
+		audioRecorder.stopRecording()
+		state = .idle
+	}
+	
 	func checkRecordPermission() async -> Bool {
-		return await withCheckedContinuation { continuation in
+		await withCheckedContinuation { continuation in
 			AudioRecordingPermissionManager.check { granted in
 				continuation.resume(returning: granted)
 			}
 		}
 	}
 	
-	func startRecording() throws {
-		do {
-			self.currentRecordingSession = RecordingSession()
-			try audioRecorder.startRecording()
-		} catch {
-			print("Audio save failed: \(error.localizedDescription)")
-		}
-	}
-	
-	func stopRecording() {
-		audioRecorder.stopRecording()
-	}
-	
 	func checkSpeechRecognitionPermission() async -> Bool {
-		return await withCheckedContinuation { continuation in
+		await withCheckedContinuation { continuation in
 			AppleSpeechRecognitionPermissionManager.check { granted in
 				continuation.resume(returning: granted)
 			}
@@ -84,7 +111,42 @@ class RecordingControlsViewModel: ObservableObject {
 	}
 	
 	private func flushSavedSessionAndSegments() {
-		self.currentRecordingSession = nil
-		self.audioSegmentURLs = []
+		currentRecordingSession = nil
+		audioSegmentURLs = []
+	}
+}
+
+extension RecordingControlsViewModel {
+	var toggleButtonLabel: String {
+		switch state {
+		case .idle:
+			return "Record"
+		case .recording:
+			return "Pause"
+		case .paused:
+			return "Resume"
+		}
+	}
+
+	var toggleButtonIcon: String {
+		switch state {
+		case .idle:
+			return "mic.fill"
+		case .recording:
+			return "pause.fill"
+		case .paused:
+			return "play.fill"
+		}
+	}
+
+	var toggleButtonColor: Color {
+		switch state {
+		case .idle:
+			return .blue
+		case .recording:
+			return .orange
+		case .paused:
+			return .green
+		}
 	}
 }

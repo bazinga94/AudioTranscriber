@@ -26,7 +26,6 @@ class WhisperTranscriptionService: TranscriptionService {
 	}
 
 	func transcribe(fileURL: URL) async throws -> String {
-		print("Sent request !!!")
 		guard let audioData = try? Data(contentsOf: fileURL) else {
 			throw WhisperTranscriptionError.fileLoadFailed
 		}

@@ -10,73 +10,65 @@ import SwiftUI
 struct RecordingControlsView: View {
 	@Environment(\.modelContext) private var modelContext
 	@StateObject var viewModel: RecordingControlsViewModel
-	
+
 	init(viewModel: RecordingControlsViewModel) {
 		self._viewModel = StateObject(wrappedValue: viewModel)
 	}
-	
-    var body: some View {
-		Button {
-			Task {
-				switch viewModel.state {
-				case .idle:
-					let recordGranted = await viewModel.checkRecordPermission()
-					let speechRecognitionGranted = await viewModel.checkSpeechRecognitionPermission()
-					
-					if recordGranted && speechRecognitionGranted {
-						do {
-							viewModel.state = .recording
-							try viewModel.startRecording()
-						} catch {
-							viewModel.state = .idle
-							print("Audio save failed: \(error.localizedDescription)")
-						}
-					}
-				case .recording:
-					viewModel.stopRecording()
+
+	var body: some View {
+		HStack(spacing: 16) {
+			// Toggle button (Record / Pause / Resume)
+			Button {
+				viewModel.toggleRecordingState()
+			} label: {
+				Label(
+					viewModel.toggleButtonLabel,
+					systemImage: viewModel.toggleButtonIcon
+				)
+				.foregroundStyle(.white)
+				.frame(maxWidth: .infinity)
+				.padding()
+				.background(viewModel.toggleButtonColor)
+				.clipShape(Capsule())
+			}
+
+			// Stop button (only visible when not idle)
+			if viewModel.state != .idle {
+				Button {
+					viewModel.stopRecordingAndSave()
 					saveRecordingSession()
-					transcribeRecordingSession()
-					viewModel.state = .idle
+					viewModel.transcribeRecord()
+				} label: {
+					Label("Stop", systemImage: "stop.fill")
+						.foregroundStyle(.white)
+						.frame(maxWidth: .infinity)
+						.padding()
+						.background(Color.red)
+						.clipShape(Capsule())
 				}
 			}
-			
-		} label: {
-			Label(
-				viewModel.state == .recording ? "Stop" : "Record",
-				systemImage: viewModel.state == .recording ? "stop.fill" : "mic.fill"
-			)
-			.foregroundStyle(.white)
-			.frame(maxWidth: .infinity, maxHeight: .infinity)
-			.contentShape(Rectangle())
 		}
-		.frame(height: 64)
-		.buttonStyle(.plain)
-		.background(
-			viewModel.state == .recording
-			? Color(UIColor.systemRed)
-			: Color(UIColor.systemBlue)
-		)
-		.animation(.easeInOut, value: viewModel.state)
-    }
-	
-	func saveRecordingSession() {
-		guard let recordingSession = self.viewModel.currentRecordingSession else { return }
-		let audioSegments = viewModel.audioSegmentURLs.map { AudioSegment(fileURL: $0, session: recordingSession) }
-		
-		recordingSession.segments = audioSegments
+		.padding()
+//		.animation(.easeInOut, value: viewModel.state)
+	}
+
+	private func saveRecordingSession() {
+		guard let recordingSession = viewModel.currentRecordingSession else { return }
+
+		let segments = viewModel.audioSegmentURLs.map {
+			AudioSegment(fileURL: $0, session: recordingSession)
+		}
+		recordingSession.segments = segments
 		modelContext.insert(recordingSession)
-		// Explicit save required due to a known SwiftData autosave bug in iOS 18 Simulator (Xcode 16)
+
 		do {
 			try modelContext.save()
 		} catch {
-			print("Save failed: \(error.localizedDescription)")
+			print("Save failed: \(error)")
 		}
 	}
-	
-	func transcribeRecordingSession() {
-		viewModel.transcribeRecord()
-	}
 }
+
 
 #Preview {
 	RecordingControlsView(

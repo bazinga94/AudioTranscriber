@@ -9,15 +9,22 @@ import AVFAudio
 import Combine
 
 class AudioRecorder {
+	enum RecordingStatus {
+		case idle
+		case recording
+		case paused
+	}
+	
 	private var engine: AVAudioEngine
 	private var segmentWriter: AudioSegmentWriter?
-	private var isRecording = false
-	
 	private let audioSegmentSubject: PassthroughSubject<URL, Never> = .init()
+	
 	var audioSegmentPublisher: AnyPublisher<URL, Never> {
 		audioSegmentSubject
 			.eraseToAnyPublisher()
 	}
+	
+	private(set) var status: RecordingStatus = .idle
 	
 	init(engine: AVAudioEngine = AVAudioEngine()) {
 		self.engine = engine
@@ -38,14 +45,26 @@ class AudioRecorder {
 		}
 
 		try engine.start()
-		isRecording = true
+		status = .recording
+	}
+
+	func pauseRecording() {
+		guard status == .recording else { return }
+		engine.pause()
+		status = .paused
+	}
+
+	func resumeRecording() throws {
+		guard status == .paused else { return }
+		try engine.start()
+		status = .recording
 	}
 
 	func stopRecording() {
 		engine.inputNode.removeTap(onBus: 0)
 		engine.stop()
 		segmentWriter?.stop()
-		isRecording = false
+		status = .idle
 	}
 }
 
