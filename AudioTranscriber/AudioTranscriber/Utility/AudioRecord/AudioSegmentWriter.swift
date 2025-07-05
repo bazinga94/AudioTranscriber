@@ -16,7 +16,7 @@ class AudioSegmentWriter {
 	private let directory: URL
 	private var currentFile: AVAudioFile?
 	
-	private let segmentDuration: TimeInterval = 10	// 30
+	private let segmentDuration: TimeInterval = 30
 	private var recordingStartTime: AVAudioTime?
 	
 	weak var delegate: AudioSegmentWriterDelegate?
