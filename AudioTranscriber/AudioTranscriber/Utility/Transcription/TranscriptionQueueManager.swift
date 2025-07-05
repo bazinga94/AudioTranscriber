@@ -70,10 +70,10 @@ actor TranscriptionQueueManager {
 				try next.segment.modelContext?.save()
 			} catch {
 				switch error {
-				case TranscriptionError.notAvailable:
+				case AppleTranscriptionError.notAvailable:
 					print("Transcription service not available.")
 					
-				case TranscriptionError.speechRecognitionFailed(let underlyingError):
+				case AppleTranscriptionError.speechRecognitionFailed(let underlyingError):
 					print("Speech recognition failed: \(underlyingError)")
 					
 				default:
@@ -82,6 +82,8 @@ actor TranscriptionQueueManager {
 					queue.append(next)
 				}
 			}
+			
+//			try await Task.sleep(nanoseconds: 3_000_000_000) // 3 second delay
 		}
 	}
 	
