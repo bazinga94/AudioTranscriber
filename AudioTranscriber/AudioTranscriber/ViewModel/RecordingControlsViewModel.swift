@@ -14,7 +14,6 @@ class RecordingControlsViewModel: ObservableObject {
 		case recording
 	}
 	
-	@Published var micAuthorized: Bool = false
 	@Published var state: RecordingState = .idle
 	
 	private var audioRecorder: AudioRecorder
@@ -36,7 +35,6 @@ class RecordingControlsViewModel: ObservableObject {
 		
 		self.audioRecorder.audioSegmentPublisher
 			.sink(receiveValue: { [weak self] url in
-				print("1", url)
 				self?.audioSegmentURLs.append(url)
 			})
 			.store(in: &cancellables)
@@ -44,10 +42,7 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	func checkRecordPermission() async -> Bool {
 		return await withCheckedContinuation { continuation in
-			audioRecorder.checkRecordPermissionNeeded { granted in
-				DispatchQueue.main.async {
-					self.micAuthorized = granted
-				}
+			AudioRecordingPermissionManager.check { granted in
 				continuation.resume(returning: granted)
 			}
 		}
@@ -68,7 +63,7 @@ class RecordingControlsViewModel: ObservableObject {
 	
 	func checkSpeechRecognitionPermission() async -> Bool {
 		return await withCheckedContinuation { continuation in
-			appleTranscription.checkSpeechRecognitionPermissionNeeded { granted in
+			AppleSpeechRecognitionPermissionManager.check { granted in
 				continuation.resume(returning: granted)
 			}
 		}

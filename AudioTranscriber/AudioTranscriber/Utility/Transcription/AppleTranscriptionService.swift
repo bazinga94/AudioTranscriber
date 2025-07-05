@@ -8,41 +8,60 @@
 import Foundation
 import Speech
 
-class AppleTranscriptionService: TranscriptionService {
-	
-	func checkSpeechRecognitionPermissionNeeded(completionHandler: @escaping ((Bool) -> Void)) {
-		
-		let status = SFSpeechRecognizer.authorizationStatus()
-		
-		switch status {
-		case .notDetermined:
-			requestSpeechRecognitionPermission { granted in
-				completionHandler(granted)
-			}
-		case .denied, .restricted:
-			completionHandler(false)
-		case .authorized:
-			completionHandler(true)
-		@unknown default:
-			completionHandler(false)
-		}
-	}
-	
-	private func requestSpeechRecognitionPermission(completionHandler: @escaping ((Bool) -> Void)) {
-		SFSpeechRecognizer.requestAuthorization { status in
-			switch status {
-			case .authorized:
-				completionHandler(true)
-			case .denied, .restricted, .notDetermined:
-				completionHandler(false)
-			@unknown default:
-				completionHandler(false)
-			}
-		}
-	}
-	
+//actor AppleTranscriptionService: TranscriptionService {
+//	func transcribe(fileURL: URL) async throws -> String {
+//		let recognizer = SFSpeechRecognizer()
+//		guard let recognizer = recognizer, recognizer.isAvailable else {
+//			throw TranscriptionError.notAvailable
+//		}
+//
+//		let request = SFSpeechURLRecognitionRequest(url: fileURL)
+//		return try await withCheckedThrowingContinuation { continuation in
+//			recognizer.recognitionTask(with: request) { result, error in
+//				if let error = error {
+//					continuation.resume(throwing: TranscriptionError.speechRecognitionFailed(error))
+//				} else if let result = result, result.isFinal {
+//					print(result.bestTranscription.formattedString)
+//					continuation.resume(returning: result.bestTranscription.formattedString)
+//				}
+//			}
+//		}
+//	}
+//}
+
+enum TranscriptionError: Error {
+	case notAvailable
+	case speechRecognitionFailed(Error)
+}
+
+actor AppleTranscriptionService: TranscriptionService {
+	private var isProcessing = false
+	private var taskQueue: [URL] = []
+
 	func transcribe(fileURL: URL) async throws -> String {
-		print("2", fileURL)
+		taskQueue.append(fileURL)
+		return try await processNext()
+	}
+
+	private func processNext() async throws -> String {
+		while isProcessing {
+			try await Task.sleep(nanoseconds: 100_000_000) // 100ms polling
+		}
+
+		guard let fileURL = taskQueue.first else {
+			throw TranscriptionError.notAvailable
+		}
+
+		isProcessing = true
+		defer {
+			taskQueue.removeFirst()
+			isProcessing = false
+		}
+
+		return try await runRecognition(fileURL: fileURL)
+	}
+
+	private func runRecognition(fileURL: URL) async throws -> String {
 		let recognizer = SFSpeechRecognizer()
 		guard let recognizer = recognizer, recognizer.isAvailable else {
 			throw TranscriptionError.notAvailable
@@ -54,15 +73,9 @@ class AppleTranscriptionService: TranscriptionService {
 				if let error = error {
 					continuation.resume(throwing: TranscriptionError.speechRecognitionFailed(error))
 				} else if let result = result, result.isFinal {
-					print(result.bestTranscription.formattedString)
 					continuation.resume(returning: result.bestTranscription.formattedString)
 				}
 			}
 		}
 	}
-}
-
-enum TranscriptionError: Error {
-	case notAvailable
-	case speechRecognitionFailed(Error)
 }

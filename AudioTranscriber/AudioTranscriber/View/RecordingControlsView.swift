@@ -84,7 +84,7 @@ struct RecordingControlsView: View {
 			audioRecorder: .init(),
 			appleTranscription: .init(),
 			transcriptionQueueManager: .init(
-				primaryService: AppleTranscriptionService(),	// Need change
+				primaryService: WhisperTranscriptionService(),
 				fallbackService: AppleTranscriptionService()
 			)
 		)

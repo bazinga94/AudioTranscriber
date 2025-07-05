@@ -28,6 +28,7 @@ actor TranscriptionQueueManager {
 	private let fallbackService: TranscriptionService
 	
 	private let maxConcurrentTasks: Int = 5
+	private let maxRetryCount: Int = 1
 	private var currentRunning: Int
 	
 	init(
@@ -59,7 +60,7 @@ actor TranscriptionQueueManager {
 			}
 			
 			do {
-				if next.retryCount > 5 {
+				if next.retryCount >= maxRetryCount {
 					let result = try await fallbackService.transcribe(fileURL: next.segment.fileURL)
 					next.segment.transcriptionText = result
 				} else {
