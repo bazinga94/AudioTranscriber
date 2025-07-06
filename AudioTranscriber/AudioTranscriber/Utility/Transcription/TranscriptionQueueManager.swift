@@ -67,7 +67,9 @@ actor TranscriptionQueueManager {
 					let result = try await primaryService.transcribe(fileURL: next.segment.fileURL)
 					next.segment.transcriptionText = result
 				}
+				next.segment.session.generateFullTranscription()
 				try next.segment.modelContext?.save()
+				
 			} catch {
 				switch error {
 				case AppleTranscriptionError.notAvailable:

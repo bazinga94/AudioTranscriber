@@ -16,21 +16,21 @@ struct RecordingListView: View {
 		List {
 			ForEach(sessions) { session in
 				NavigationLink {
-					VStack {
-						Text("Session recorded on \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
-						List {
-							ForEach(session.segments) { segment in
-								Text(segment.transcriptionText ?? "")
-							}
-						}
-						Spacer()
-						Text(session.fullTranscription ?? "")
-					}
+					RecordingDetailView(session: session)
 				} label: {
-					VStack(alignment: .leading) {
-						Text(session.title ?? "Untitled")
-						Text(session.createdAt, format: Date.FormatStyle(date: .numeric, time: .standard))
+					VStack(alignment: .leading, spacing: 10) {
+						// Preview snippet
+						Text(session.fullTranscription?.trimmingCharacters(in: .whitespacesAndNewlines).prefix(60) ?? "No transcription available")
+							.font(.body)
+							.foregroundColor(.primary)
+							.lineLimit(2)
+						
+						// Timestamp
+						Text(session.createdAt, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+							.font(.caption)
+							.foregroundColor(.gray)
 					}
+					.padding(.vertical, 5)
 				}
 			}
 			.onDelete(perform: deleteItems)

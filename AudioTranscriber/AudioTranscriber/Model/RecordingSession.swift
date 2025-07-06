@@ -24,3 +24,11 @@ class RecordingSession {
 		self.segments = []
 	}
 }
+
+extension RecordingSession {
+	func generateFullTranscription() {
+		self.fullTranscription = segments.sorted(by: { $0.createdAt < $1.createdAt })
+			.compactMap { $0.transcriptionText?.trimmingCharacters(in: .whitespacesAndNewlines) }
+			.joined(separator: " ")
+	}
+}
