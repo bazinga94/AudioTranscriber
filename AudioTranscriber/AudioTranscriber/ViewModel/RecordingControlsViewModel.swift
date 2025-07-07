@@ -24,7 +24,7 @@ class RecordingControlsViewModel: ObservableObject, @unchecked Sendable {
 	private let audioSessionManager: AudioSessionManager
 	
 	private(set) var currentRecordingSession: RecordingSession?
-	private(set) var audioSegmentURLs: [URL] = []
+	private(set) var audioMetaList: [AudioMeta] = []
 	private var cancellables = Set<AnyCancellable>()
 	
 	init(
@@ -40,7 +40,7 @@ class RecordingControlsViewModel: ObservableObject, @unchecked Sendable {
 		
 		self.audioRecorder.audioSegmentPublisher
 			.sink { [weak self] url in
-				self?.audioSegmentURLs.append(url)
+				self?.audioMetaList.append(url)
 			}
 			.store(in: &cancellables)
 	}
@@ -115,7 +115,7 @@ class RecordingControlsViewModel: ObservableObject, @unchecked Sendable {
 	
 	private func flushSavedSessionAndSegments() {
 		currentRecordingSession = nil
-		audioSegmentURLs = []
+		audioMetaList = []
 	}
 }
 

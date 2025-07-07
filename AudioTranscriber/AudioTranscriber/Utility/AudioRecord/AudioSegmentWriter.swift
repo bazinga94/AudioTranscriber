@@ -8,7 +8,7 @@
 import AVFoundation
 
 protocol AudioSegmentWriterDelegate: AnyObject {
-	func didCreateSegmentAt(url: URL)
+	func didCreateAudio(audioMeta: AudioMeta)
 }
 
 class AudioSegmentWriter {
@@ -51,7 +51,7 @@ class AudioSegmentWriter {
 	func createNewFile() {
 		let url = directory.appendingPathComponent("recording_segment_\(UUID().uuidString).m4a")
 		currentFile = try? AVAudioFile(forWriting: url, settings: format.settings)
-		delegate?.didCreateSegmentAt(url: url)
+		delegate?.didCreateAudio(audioMeta: AudioMeta(url: url, createdAt: Date()))
 	}
 }
 

@@ -17,9 +17,9 @@ class AudioRecorder {
 	
 	private var engine: AVAudioEngine
 	private var segmentWriter: AudioSegmentWriter?
-	private let audioSegmentSubject: PassthroughSubject<URL, Never> = .init()
+	private let audioSegmentSubject: PassthroughSubject<AudioMeta, Never> = .init()
 	
-	var audioSegmentPublisher: AnyPublisher<URL, Never> {
+	var audioSegmentPublisher: AnyPublisher<AudioMeta, Never> {
 		audioSegmentSubject
 			.eraseToAnyPublisher()
 	}
@@ -69,7 +69,7 @@ class AudioRecorder {
 }
 
 extension AudioRecorder: AudioSegmentWriterDelegate {
-	func didCreateSegmentAt(url: URL) {
-		audioSegmentSubject.send(url)
+	func didCreateAudio(audioMeta: AudioMeta) {
+		audioSegmentSubject.send(audioMeta)
 	}
 }

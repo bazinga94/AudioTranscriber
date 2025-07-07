@@ -57,8 +57,8 @@ struct RecordingControlsView: View {
 	private func saveRecordingSession() {
 		guard let recordingSession = viewModel.currentRecordingSession else { return }
 
-		let segments = viewModel.audioSegmentURLs.map {
-			AudioSegment(fileURL: $0, session: recordingSession)
+		let segments = viewModel.audioMetaList.map {
+			AudioSegment(fileURL: $0.url, createdAt: $0.createdAt, session: recordingSession)
 		}
 		recordingSession.segments = segments
 		modelContext.insert(recordingSession)
