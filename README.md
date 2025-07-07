@@ -56,5 +56,5 @@ AudioTranscriber is an iOS app built with SwiftUI and Swift Concurrency that let
 
 ### Known Issues & Future Improvements
 
-- **Whisper API** was not fully tested due to credit limitations. If the API key is not properly set, transcription falls back to **Apple STT** after 5 retries.
+- **Whisper API** was not fully tested due to credit limitations. If the API key is not properly set, transcription falls back to **Speech-to-Text** after 5 retries.
 - Testing was skipped due to time constraints.
