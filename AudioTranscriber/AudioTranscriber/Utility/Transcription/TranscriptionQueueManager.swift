@@ -7,12 +7,7 @@
 
 import Foundation
 
-protocol TranscriptionTask {
-	var segment: AudioSegment { get set }
-	var retryCount: Int { get set }
-}
-
-struct AudioTranscriptionTask: TranscriptionTask, @unchecked Sendable {
+struct AudioTranscriptionTask: @unchecked Sendable {
 	var segment: AudioSegment
 	var retryCount: Int
 	
@@ -23,7 +18,7 @@ struct AudioTranscriptionTask: TranscriptionTask, @unchecked Sendable {
 }
 
 actor TranscriptionQueueManager {
-	private var queue: [TranscriptionTask]
+	private var queue: [AudioTranscriptionTask]
 	private let primaryService: TranscriptionService
 	private let fallbackService: TranscriptionService
 	
@@ -41,33 +36,40 @@ actor TranscriptionQueueManager {
 		self.currentRunning = 0
 	}
 	
-	func add(task: TranscriptionTask) async {
+	func add(task: AudioTranscriptionTask) async {
 		queue.append(task)
 		await processTaskIfPossible()
 	}
 	
 	private func processTaskIfPossible() async {
-		if currentRunning >= maxConcurrentTasks || queue.isEmpty {
-			return
+		while currentRunning < maxConcurrentTasks && !queue.isEmpty {
+			let next = queue.removeFirst()
+			currentRunning += 1
+			
+			Task {
+				await process(task: next)
+			}
 		}
-		
-		var next = queue.removeFirst()
-		currentRunning += 1
+	}
+	
+	private func process(task: AudioTranscriptionTask) async {
+		var task = task
 		
 		defer {
 			Task {
-				await taskFinished()
+				await self.taskFinished()
 			}
 		}
 		
 		do {
-			let fileURL = next.segment.fileURL
-			let service: TranscriptionService = next.retryCount >= maxRetryCount ? fallbackService : primaryService
+			let fileURL = task.segment.fileURL
+			let service: TranscriptionService = task.retryCount >= maxRetryCount ? fallbackService : primaryService
 			let result = try await service.transcribe(fileURL: fileURL)
-
-			next.segment.transcriptionText = result
-			next.segment.session.generateFullTranscription()
-			try next.segment.modelContext?.save()
+			
+			task.segment.transcriptionText = result
+			task.segment.session.generateFullTranscription()
+			try task.segment.modelContext?.save()
+			
 		} catch {
 			switch error {
 			case AppleTranscriptionError.notAvailable:
@@ -78,12 +80,14 @@ actor TranscriptionQueueManager {
 				
 			default:
 				print("Unknown error: \(error)")
-				next.retryCount += 1
-				queue.append(next)
+				task.retryCount += 1
+				print("Retry count: \(task.retryCount)")
+				Task {
+					try? await Task.sleep(nanoseconds: 3_000_000_000)	// 3 second safety delay
+					await self.add(task: task)
+				}
 			}
 		}
-		
-//		try await Task.sleep(nanoseconds: 3_000_000_000) // 3 second delay
 	}
 	
 	private func taskFinished() async {

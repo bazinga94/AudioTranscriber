@@ -45,6 +45,7 @@ class RecordingControlsViewModel: ObservableObject, @unchecked Sendable {
 			.store(in: &cancellables)
 	}
 	
+	@MainActor
 	func toggleRecordingState() async {
 		switch state {
 		case .idle:
