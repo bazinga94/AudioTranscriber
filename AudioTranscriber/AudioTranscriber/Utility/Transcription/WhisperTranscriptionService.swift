@@ -21,7 +21,10 @@ enum WhisperTranscriptionError: Error {
 final class WhisperTranscriptionService: TranscriptionService {
 	private let apiKey: String
 
-	init(apiKey: String = "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") {
+	init() {
+		guard let apiKey = Bundle.main.infoDictionary?["OpenAIAPIKey"] as? String else {
+			fatalError("OpenAIAPIKey is missing in Info.plist.")
+		}
 		self.apiKey = apiKey
 	}
 
@@ -42,11 +45,10 @@ final class WhisperTranscriptionService: TranscriptionService {
 
 		let (data, response) = try await URLSession.shared.data(for: request)
 		guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-//			print("OpenAI Error Response: ")
-//			print(response)
-//			if let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-//				print(errorResponse)
-//			}
+			print("OpenAI Error Response: ")
+			if let errorResponse = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+				print(errorResponse)
+			}
 			throw WhisperTranscriptionError.invalidResponse
 		}
 
