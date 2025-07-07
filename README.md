@@ -8,6 +8,14 @@ AudioTranscriber is an iOS app built with SwiftUI and Swift Concurrency that let
 
 - iOS 17.6+
 
+### API Key Setup
+To use the Whisper API transcription feature, you must add your OpenAI API Key to the app’s configuration:
+
+1. Open `Info.plist`
+2. Add a API key:
+  > Key: OpenAIAPIKey, 
+  > Value: Your API key
+
 ### Screenshots
 
 > <img src="https://github.com/user-attachments/assets/de852fd3-c425-45a0-9d95-719d46aebb11" width="250"/>
