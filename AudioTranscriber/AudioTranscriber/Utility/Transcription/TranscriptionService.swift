@@ -7,6 +7,6 @@
 
 import Foundation
 
-protocol TranscriptionService {
+protocol TranscriptionService: Sendable {
 	func transcribe(fileURL: URL) async throws -> String
 }

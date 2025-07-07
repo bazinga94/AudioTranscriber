@@ -19,7 +19,9 @@ struct RecordingControlsView: View {
 		HStack(spacing: 16) {
 			// Toggle button (Record / Pause / Resume)
 			Button {
-				viewModel.toggleRecordingState()
+				Task {
+					await viewModel.toggleRecordingState()
+				}
 			} label: {
 				Label(
 					viewModel.toggleButtonLabel,

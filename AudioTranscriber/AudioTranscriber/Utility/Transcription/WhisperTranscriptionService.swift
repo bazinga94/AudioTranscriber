@@ -18,7 +18,7 @@ enum WhisperTranscriptionError: Error {
 	case fileLoadFailed
 }
 
-class WhisperTranscriptionService: TranscriptionService {
+final class WhisperTranscriptionService: TranscriptionService {
 	private let apiKey: String
 
 	init(apiKey: String = "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") {

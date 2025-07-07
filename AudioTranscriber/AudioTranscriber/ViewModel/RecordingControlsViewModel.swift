@@ -9,7 +9,7 @@ import SwiftUI
 import Combine
 import AVFAudio
 
-class RecordingControlsViewModel: ObservableObject {
+class RecordingControlsViewModel: ObservableObject, @unchecked Sendable {
 	enum RecordingState {
 		case idle
 		case recording
@@ -45,36 +45,34 @@ class RecordingControlsViewModel: ObservableObject {
 			.store(in: &cancellables)
 	}
 	
-	func toggleRecordingState() {
-		Task {
-			switch state {
-			case .idle:
-				let recordGranted = await checkRecordPermission()
-				let speechGranted = await checkSpeechRecognitionPermission()
-				
-				guard recordGranted && speechGranted else { return }
-				
-				do {
-					currentRecordingSession = RecordingSession()
-					try audioRecorder.startRecording()
-					state = .recording
-				} catch {
-					print("Recording start failed: \(error)")
-					state = .idle
-				}
-				
-			case .recording:
-				audioRecorder.pauseRecording()
+	func toggleRecordingState() async {
+		switch state {
+		case .idle:
+			let recordGranted = await checkRecordPermission()
+			let speechGranted = await checkSpeechRecognitionPermission()
+			
+			guard recordGranted && speechGranted else { return }
+			
+			do {
+				currentRecordingSession = RecordingSession()
+				try audioRecorder.startRecording()
+				state = .recording
+			} catch {
+				print("Recording start failed: \(error)")
+				state = .idle
+			}
+			
+		case .recording:
+			audioRecorder.pauseRecording()
+			state = .paused
+			
+		case .paused:
+			do {
+				try audioRecorder.resumeRecording()
+				state = .recording
+			} catch {
+				print("Resume failed: \(error)")
 				state = .paused
-				
-			case .paused:
-				do {
-					try audioRecorder.resumeRecording()
-					state = .recording
-				} catch {
-					print("Resume failed: \(error)")
-					state = .paused
-				}
 			}
 		}
 	}
@@ -101,16 +99,16 @@ class RecordingControlsViewModel: ObservableObject {
 	}
 	
 	func transcribeRecord() {
-		Task {
-			await withTaskGroup(of: Void.self) { [weak self] group in
-				for segment in self?.currentRecordingSession?.segments ?? [] {
+		Task.detached {
+			await withTaskGroup(of: Void.self) { group in
+				for segment in self.currentRecordingSession?.segments ?? [] {
 					let task = AudioTranscriptionTask(segment: segment)
 					group.addTask {
-						await self?.transcriptionQueueManager.add(task: task)
+						await self.transcriptionQueueManager.add(task: task)
 					}
 				}
 			}
-			flushSavedSessionAndSegments()
+			self.flushSavedSessionAndSegments()
 		}
 	}
 	

@@ -8,15 +8,15 @@
 import Foundation
 
 protocol TranscriptionTask {
-	var segment: any AudioTranscribable { get set }
+	var segment: AudioSegment { get set }
 	var retryCount: Int { get set }
 }
 
-struct AudioTranscriptionTask: TranscriptionTask {
-	var segment: any AudioTranscribable
+struct AudioTranscriptionTask: TranscriptionTask, @unchecked Sendable {
+	var segment: AudioSegment
 	var retryCount: Int
 	
-	init(segment: any AudioTranscribable) {
+	init(segment: AudioSegment) {
 		self.segment = segment
 		self.retryCount = 0
 	}
@@ -28,7 +28,7 @@ actor TranscriptionQueueManager {
 	private let fallbackService: TranscriptionService
 	
 	private let maxConcurrentTasks: Int = 5
-	private let maxRetryCount: Int = 1
+	private let maxRetryCount: Int = 5
 	private var currentRunning: Int
 	
 	init(
@@ -41,12 +41,12 @@ actor TranscriptionQueueManager {
 		self.currentRunning = 0
 	}
 	
-	func add(task: TranscriptionTask) {
+	func add(task: TranscriptionTask) async {
 		queue.append(task)
-		processTaskIfPossible()
+		await processTaskIfPossible()
 	}
 	
-	private func processTaskIfPossible() {
+	private func processTaskIfPossible() async {
 		if currentRunning >= maxConcurrentTasks || queue.isEmpty {
 			return
 		}
@@ -54,43 +54,40 @@ actor TranscriptionQueueManager {
 		var next = queue.removeFirst()
 		currentRunning += 1
 		
-		Task {
-			defer {
-				taskFinished()
+		defer {
+			Task {
+				await taskFinished()
 			}
-			
-			do {
-				if next.retryCount >= maxRetryCount {
-					let result = try await fallbackService.transcribe(fileURL: next.segment.fileURL)
-					next.segment.transcriptionText = result
-				} else {
-					let result = try await primaryService.transcribe(fileURL: next.segment.fileURL)
-					next.segment.transcriptionText = result
-				}
-				next.segment.session.generateFullTranscription()
-				try next.segment.modelContext?.save()
-				
-			} catch {
-				switch error {
-				case AppleTranscriptionError.notAvailable:
-					print("Transcription service not available.")
-					
-				case AppleTranscriptionError.speechRecognitionFailed(let underlyingError):
-					print("Speech recognition failed: \(underlyingError)")
-					
-				default:
-					print("Unknown error: \(error)")
-					next.retryCount += 1
-					queue.append(next)
-				}
-			}
-			
-//			try await Task.sleep(nanoseconds: 3_000_000_000) // 3 second delay
 		}
+		
+		do {
+			let fileURL = next.segment.fileURL
+			let service: TranscriptionService = next.retryCount >= maxRetryCount ? fallbackService : primaryService
+			let result = try await service.transcribe(fileURL: fileURL)
+
+			next.segment.transcriptionText = result
+			next.segment.session.generateFullTranscription()
+			try next.segment.modelContext?.save()
+		} catch {
+			switch error {
+			case AppleTranscriptionError.notAvailable:
+				print("Transcription service not available.")
+				
+			case AppleTranscriptionError.speechRecognitionFailed(let underlyingError):
+				print("Speech recognition failed: \(underlyingError)")
+				
+			default:
+				print("Unknown error: \(error)")
+				next.retryCount += 1
+				queue.append(next)
+			}
+		}
+		
+//		try await Task.sleep(nanoseconds: 3_000_000_000) // 3 second delay
 	}
 	
-	private func taskFinished() {
+	private func taskFinished() async {
 		currentRunning -= 1
-		processTaskIfPossible()
+		await processTaskIfPossible()
 	}
 }
